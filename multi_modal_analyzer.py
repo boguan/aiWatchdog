@@ -52,17 +52,21 @@ class MultiModalAnalyzer:
     async def analyze(self, frames,fps=20,timestamps=None):
         start_time = time.time()
         
-        histroy = "录像视频刚刚开始。"
-        Recursive_summary = ""
-        for i in self.message_queue:
-            histroy = "历史视频内容总结:"+Recursive_summary+"\n\n当前时间段：" + i['start_time']+"  - " + i['end_time'] + "\n该时间段视频描述如下：" +i['description'] + "\n\n该时间段异常提醒:"+i['is_alert']
+        # 构建历史记录
+        if not self.message_queue:
+            histroy = "录像视频刚刚开始。"
+        else:
+            histroy = ""
+            for i in self.message_queue:
+                histroy += f"时间段：{i['start_time']} - {i['end_time']}\n描述：{i['description']}\n异常提醒：{i['is_alert']}\n\n"
         
         time_temp = time.time()
+        # 并行执行历史总结和当前帧分析
         tasks = [chat_request(prompt_summary.format(histroy=histroy)), video_chat_async_limit_frame(prompt_vieo,frames,timestamps,fps=fps)]
         results = await asyncio.gather(*tasks)
-       
-        Recursive_summary =results[0]
-        description = results[1]
+        
+        Recursive_summary = results[0]  # 这里的 Recursive_summary 是 AI 对历史记录的总结
+        description = results[1]        # 当前帧序列的描述
         description_time = time.time()-time_temp
 
         if timestamps==None:
